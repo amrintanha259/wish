@@ -24,8 +24,18 @@
     margin: 0 2px;
   }
 
-  h1 { font-size: 3rem; color: #d6336c; margin-top: 60px; }
-  p.sub { font-size: 1.3rem; color: #444; }
+  h1 {
+    font-size: clamp(1.8rem, 6vw, 3rem);
+    color: #d6336c;
+    margin: 60px 15px 0;
+    min-height: 1.3em;
+  }
+  p.sub {
+    font-size: 1.3rem;
+    color: #444;
+    opacity: 0;
+    transition: opacity 1.5s;
+  }
 
   button {
     font-size: 1.2rem;
@@ -38,6 +48,21 @@
     margin-top: 20px;
   }
   button:hover { background: #b02a5a; }
+
+  /* Intro screen */
+  #intro {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(#ffe0f0, #e0f0ff);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 1s;
+  }
+  #intro .big { font-size: 5rem; }
+  #intro p { color: #444; font-size: 1.2rem; margin: 10px 20px; }
 
   /* Balloons */
   .balloon {
@@ -52,12 +77,12 @@
     to { transform: translateY(-120vh); }
   }
 
-  /* Popup */
-  #popup {
+  /* Slideshow stage */
+  #stage {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.65);
     align-items: center;
     justify-content: center;
     z-index: 10;
@@ -66,39 +91,104 @@
     background: white;
     padding: 20px;
     border-radius: 16px;
-    max-width: 320px;
+    max-width: 340px;
     width: 85%;
+    opacity: 0;
+    transform: scale(0.94);
+    transition: opacity 1s, transform 1s;
   }
-  .card img { width: 100%; border-radius: 12px; }
+  .card.show { opacity: 1; transform: scale(1); }
+  .imgbox { overflow: hidden; border-radius: 12px; }
+  .card img {
+    width: 100%;
+    max-height: 55vh;
+    object-fit: cover;
+    display: block;
+  }
+  .card.zoom img { animation: zoom 8s linear forwards; }
+  @keyframes zoom {
+    from { transform: scale(1); }
+    to   { transform: scale(1.12); }
+  }
   .card h2 { color: #d6336c; }
   .card small { color: #888; }
+
+  /* Final message screen */
+  #finale {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 1.5s;
+  }
+  #finale.show { opacity: 1; }
+  .final-card {
+    background: white;
+    padding: 30px 20px;
+    border-radius: 20px;
+    max-width: 340px;
+    width: 85%;
+  }
+  .heart {
+    font-size: 4.5rem;
+    animation: beat 1.2s infinite;
+  }
+  @keyframes beat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+  .final-card h2 { color: #d6336c; font-size: 1.8rem; margin: 10px 0; }
+  .final-card p { color: #444; font-size: 1.2rem; margin: 8px 0; }
 </style>
 </head>
 <body>
 
   <audio id="bgm" src="music.mp3.mp3" loop></audio>
 
+  <!-- Intro screen -->
+  <div id="intro">
+    <div class="big">💌</div>
+    <p>A little surprise for you...</p>
+    <button onclick="startAll()">Tap to open 💌</button>
+  </div>
+
   <div class="bunting" id="bunting"></div>
 
-  <h1>🎉 Happy Birthday, <span id="name"></span>! 🎉</h1>
-  <p class="sub">Wishing you a day full of joy and happiness!</p>
-  <button onclick="openPopup()">Click for a surprise 🎁</button>
+  <h1 id="title"></h1>
+  <p class="sub" id="sub">Wishing you a day full of joy and happiness!</p>
 
-  <div id="popup" onclick="nextWish()">
-    <div class="card">
-      <img id="wishImg" src="" alt="Birthday photo">
+  <!-- Photo slideshow -->
+  <div id="stage">
+    <div class="card" id="card">
+      <div class="imgbox"><img id="wishImg" src="" alt="Birthday photo"></div>
       <h2 id="wishTitle"></h2>
       <p id="wishText"></p>
       <small id="wishCount"></small>
     </div>
   </div>
 
-<script>
-  // 1. CHANGE THIS to the birthday person's name
-  const personName = "Dear Husband";
-  document.getElementById("name").textContent = personName;
+  <!-- Final message -->
+  <div id="finale">
+    <div class="final-card">
+      <div class="heart">❤️</div>
+      <h2>I love you!</h2>
+      <p>Have a great birthday! 🎂🎉</p>
+      <button onclick="startSlideshow()">Watch again 💌</button>
+    </div>
+  </div>
 
-  // 2. YOUR WISHES: edit photo names and messages here
+<script>
+  // 1. Title text
+  const titleText = "🎉 Happy Birthday, Dear Husband! 🎉";
+
+  // 2. How long each photo stays (milliseconds). 5000 = 5 seconds
+  const SLIDE_TIME = 5000;
+
+  // 3. YOUR WISHES: edit photo names and messages here
   const wishes = [
     { img: "Photo1.jpg", title: "Happy Birthday! 🎂", text: "May your heart always find reasons to be happy." },
     { img: "Photo2.jpg", title: "Our memories 💛", text: "Miles apart, but never far from my heart." },
@@ -108,7 +198,7 @@
 
   const colors = ["#ff6b6b", "#feca57", "#48dbfb", "#1dd1a1", "#ff9ff3", "#a29bfe"];
 
-  // Make the festoon flags
+  // Festoon flags
   const bunting = document.getElementById("bunting");
   for (let i = 0; i < 40; i++) {
     const flag = document.createElement("div");
@@ -117,7 +207,7 @@
     bunting.appendChild(flag);
   }
 
-  // Make balloons float up
+  // Balloons
   function makeBalloon() {
     const b = document.createElement("div");
     b.className = "balloon";
@@ -126,37 +216,79 @@
     document.body.appendChild(b);
     setTimeout(() => b.remove(), 6000);
   }
-  setInterval(makeBalloon, 500);
+  function burst(n) { for (let i = 0; i < n; i++) makeBalloon(); }
+  setInterval(makeBalloon, 700);
 
-  // Slideshow of wishes
+  // Typing effect
+  function typeText(el, text, speed) {
+    return new Promise(resolve => {
+      const chars = Array.from(text);
+      let i = 0;
+      el.textContent = "";
+      const timer = setInterval(() => {
+        el.textContent += chars[i];
+        i++;
+        if (i >= chars.length) { clearInterval(timer); resolve(); }
+      }, speed);
+    });
+  }
+
+  // Start everything after the first tap
+  function startAll() {
+    const intro = document.getElementById("intro");
+    intro.style.opacity = 0;
+    setTimeout(() => intro.style.display = "none", 1000);
+
+    document.getElementById("bgm").play().catch(() => {});
+    burst(15);
+
+    typeText(document.getElementById("title"), titleText, 90).then(() => {
+      document.getElementById("sub").style.opacity = 1;
+      setTimeout(startSlideshow, 2500);
+    });
+  }
+
+  // Automatic slideshow
   let current = 0;
+  const stage = document.getElementById("stage");
+  const card = document.getElementById("card");
+  const finale = document.getElementById("finale");
 
-  function showWish() {
+  function startSlideshow() {
+    finale.classList.remove("show");
+    finale.style.display = "none";
+    current = 0;
+    stage.style.display = "flex";
+    playSlide();
+  }
+
+  function playSlide() {
+    if (current >= wishes.length) { finish(); return; }
+
     const w = wishes[current];
+    card.classList.remove("show", "zoom");
     document.getElementById("wishImg").src = w.img;
     document.getElementById("wishTitle").textContent = w.title;
     document.getElementById("wishText").textContent = w.text;
-    document.getElementById("wishCount").textContent =
-      (current + 1) + " / " + wishes.length + " (tap to continue)";
+    document.getElementById("wishCount").textContent = (current + 1) + " / " + wishes.length;
+
+    setTimeout(() => {
+      card.classList.add("show", "zoom");
+      burst(5);
+    }, 150);
+
+    setTimeout(() => {
+      card.classList.remove("show");
+      setTimeout(() => { current++; playSlide(); }, 1000);
+    }, SLIDE_TIME);
   }
 
-  function openPopup() {
-    document.getElementById("bgm").play();
-    current = 0;
-    showWish();
-    document.getElementById("popup").style.display = "flex";
-    for (let i = 0; i < 15; i++) makeBalloon();
-  }
-
-  function nextWish() {
-    current++;
-    if (current >= wishes.length) {
-      document.getElementById("popup").style.display = "none";
-      for (let i = 0; i < 25; i++) makeBalloon();
-    } else {
-      showWish();
-      for (let i = 0; i < 8; i++) makeBalloon();
-    }
+  // Final "I love you" screen
+  function finish() {
+    stage.style.display = "none";
+    finale.style.display = "flex";
+    setTimeout(() => finale.classList.add("show"), 50);
+    burst(30);
   }
 </script>
 </body>
