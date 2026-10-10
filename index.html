@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Happy Birthday!</title>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: linear-gradient(#ffe0f0, #e0f0ff);
+    overflow: hidden;
+  }
+
+  /* Festoon flags */
+  .bunting { display: flex; justify-content: center; flex-wrap: wrap; }
+  .flag {
+    width: 0; height: 0;
+    border-left: 22px solid transparent;
+    border-right: 22px solid transparent;
+    border-top: 45px solid red;
+    margin: 0 2px;
+  }
+
+  h1 { font-size: 3rem; color: #d6336c; margin-top: 60px; }
+  p.sub { font-size: 1.3rem; color: #444; }
+
+  button {
+    font-size: 1.2rem;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 30px;
+    background: #d6336c;
+    color: white;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  button:hover { background: #b02a5a; }
+
+  /* Balloons */
+  .balloon {
+    position: fixed;
+    bottom: -120px;
+    width: 60px; height: 75px;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    animation: rise 6s linear forwards;
+    z-index: 1;
+  }
+  @keyframes rise {
+    to { transform: translateY(-120vh); }
+  }
+
+  /* Popup */
+  #popup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  .card {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    max-width: 320px;
+    width: 85%;
+  }
+  .card img { width: 100%; border-radius: 12px; }
+  .card h2 { color: #d6336c; }
+  .card small { color: #888; }
+</style>
+</head>
+<body>
+
+  <audio id="bgm" src="music.mp3.mp3" loop></audio>
+
+  <div class="bunting" id="bunting"></div>
+
+  <h1>🎉 Happy Birthday, <span id="name"></span>! 🎉</h1>
+  <p class="sub">Wishing you a day full of joy and happiness!</p>
+  <button onclick="openPopup()">Click for a surprise 🎁</button>
+
+  <div id="popup" onclick="nextWish()">
+    <div class="card">
+      <img id="wishImg" src="" alt="Birthday photo">
+      <h2 id="wishTitle"></h2>
+      <p id="wishText"></p>
+      <small id="wishCount"></small>
+    </div>
+  </div>
+
+<script>
+  // 1. CHANGE THIS to the birthday person's name
+  const personName = "Dear Husband";
+  document.getElementById("name").textContent = personName;
+
+  // 2. YOUR WISHES: edit photo names and messages here
+  const wishes = [
+    { img: "photo1.jpg", title: "Happy Birthday! 🎂", text: "May your heart always find reasons to be happy." },
+    { img: "photo2.jpg", title: "Our memories 💛", text: "Miles apart, but never far from my heart." },
+    { img: "photo3.jpg", title: "Stay awesome! ✨", text: "You deserve all the beautiful things this world has to offer." },
+    { img: "photo4.jpg", title: "Best wishes! 🎁", text: "The best part of my life is that I get to love you." }
+  ];
+
+  const colors = ["#ff6b6b", "#feca57", "#48dbfb", "#1dd1a1", "#ff9ff3", "#a29bfe"];
+
+  // Make the festoon flags
+  const bunting = document.getElementById("bunting");
+  for (let i = 0; i < 40; i++) {
+    const flag = document.createElement("div");
+    flag.className = "flag";
+    flag.style.borderTopColor = colors[i % colors.length];
+    bunting.appendChild(flag);
+  }
+
+  // Make balloons float up
+  function makeBalloon() {
+    const b = document.createElement("div");
+    b.className = "balloon";
+    b.style.left = Math.random() * 95 + "vw";
+    b.style.background = colors[Math.floor(Math.random() * colors.length)];
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 6000);
+  }
+  setInterval(makeBalloon, 500);
+
+  // Slideshow of wishes
+  let current = 0;
+
+  function showWish() {
+    const w = wishes[current];
+    document.getElementById("wishImg").src = w.img;
+    document.getElementById("wishTitle").textContent = w.title;
+    document.getElementById("wishText").textContent = w.text;
+    document.getElementById("wishCount").textContent =
+      (current + 1) + " / " + wishes.length + " (tap to continue)";
+  }
+
+  function openPopup() {
+    document.getElementById("bgm").play();
+    current = 0;
+    showWish();
+    document.getElementById("popup").style.display = "flex";
+    for (let i = 0; i < 15; i++) makeBalloon();
+  }
+
+  function nextWish() {
+    current++;
+    if (current >= wishes.length) {
+      document.getElementById("popup").style.display = "none";
+      for (let i = 0; i < 25; i++) makeBalloon();
+    } else {
+      showWish();
+      for (let i = 0; i < 8; i++) makeBalloon();
+    }
+  }
+</script>
+</body>
+</html>
